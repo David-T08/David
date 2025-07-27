@@ -1,0 +1,9 @@
+[package]
+name = "voice_input"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cpal = "0.16.0"
+thiserror = "2.0.12"
+pv_porcupine = "*"

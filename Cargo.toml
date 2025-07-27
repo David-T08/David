@@ -1,8 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
-  "voice-input",
-  "app", 
+  "voice_input",
+  "wake_detection",
   "transcriber", 
-  "router"
+  "router",
+  "app"
 ]

@@ -4,3 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+voice_input = { path = "../voice_input" }
+wake_detection = { path = "../wake_detection" }
