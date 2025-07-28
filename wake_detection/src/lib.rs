@@ -52,10 +52,14 @@ impl Detector {
                 }
 
                 if let Some(curr) = full.result.get(0) {
+                    println!("{} @ {}:{} ({}%)", curr.word, curr.start, curr.end, curr.conf * 100.0);
+
                     if let Some(prev) = &last_hey {
                         let time_gap = curr.start - prev;
                         let is_confident = curr.conf >= 0.75;
                         let is_waking = curr.word.eq_ignore_ascii_case("david");
+
+                        println!("  {time_gap} {is_confident} {is_waking}");
 
                         if time_gap < 0.15 && is_confident && is_waking {
                             let _ = tx.send(()).await;
@@ -68,8 +72,8 @@ impl Detector {
                         }
                     }
 
-                    // Set last hey only if its above 75% accuracy
-                    if curr.word.eq_ignore_ascii_case("hey") && curr.conf >= 0.75 {
+                    // Set last hey only if its above 70% accuracy
+                    if curr.word.eq_ignore_ascii_case("hey") && curr.conf >= 0.70 {
                         last_hey = Some(curr.end);
                     }
                 }

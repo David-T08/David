@@ -3,8 +3,7 @@ use cpal::{
     Device, Host, Stream,
 };
 
-use rubato::{FftFixedInOut, Resampler};
-use std::sync::{Arc, Mutex};
+use rubato::{Resampler};
 use thiserror::Error;
 use tokio::sync::mpsc;
 
@@ -36,6 +35,20 @@ fn is_virtual_input(name: &str) -> bool {
         || lowered.contains("jack")
         || lowered.contains("oss")
         || lowered.contains("null")
+}
+
+// TODO: implement
+// fn filter_devices(names: ) -> Option<Device> {
+//     devices.iter().find(|d| {
+//                 d.name()
+//                     .map(|name| name.to_lowercase().contains(&custom_name.to_lowercase()))
+//                     .unwrap_or(false)
+//             })
+// }
+
+struct ResampleState {
+    buffer: Vec<f32>,
+    resampler: rubato::FftFixedInOut<f32>,
 }
 
 pub struct Recorder {
@@ -117,25 +130,44 @@ impl Recorder {
         let device = self.input.as_ref().ok_or(VoiceError::NoInputDevice)?;
         let config = device.default_input_config()?.into();
 
-        let mut resampler = FftFixedInOut::<f32>::new(44100, 16000, 1024, 1).unwrap();
+        // TODO: Get input sample rate and not hardcode
+        let resampler = rubato::FftFixedInOut::<f32>::new(44100, 16000, 1024, 1).unwrap();
+        let required_input_size = resampler.input_frames_next();
+
+        let state = ResampleState {
+            buffer: Vec::new(),
+            resampler,
+        };
+
         let (tx, rx) = mpsc::channel(8);
 
         let stream = device.build_input_stream(
             &config,
-            move |data: &[f32], _| {
-                // Downmix stereo to mono
-                let mono: Vec<f32> = data.chunks(2).map(|s| (s[0] + s[1]) / 2.0).collect();
+            {
+                let mut state = state;
+                move |data: &[f32], _| {
+                    // Downmix stereo to mono
+                    let mono: Vec<f32> = data.chunks(2).map(|s| (s[0] + s[1]) / 2.0).collect();
+                    state.buffer.extend(mono);
 
-                if let Ok(resampled) = resampler.process(&[mono], None) {
-                    let i16_samples: Vec<i16> = resampled[0]
-                        .iter()
-                        .map(|s| (*s * i16::MAX as f32) as i16)
-                        .collect();
+                    while state.buffer.len() >= required_input_size {
+                        let chunk: Vec<f32> = state.buffer.drain(..required_input_size).collect();
 
-                    let _ = tx.blocking_send(i16_samples);
+                        match state.resampler.process(&[chunk], None) {
+                            Ok(resampled) => {
+                                let i16_samples: Vec<i16> = resampled[0]
+                                    .iter()
+                                    .map(|s| (*s * i16::MAX as f32) as i16)
+                                    .collect();
+
+                                let _ = tx.blocking_send(i16_samples);
+                            }
+                            Err(e) => eprintln!("Failed to downsample: {e}"),
+                        }
+                    }
                 }
             },
-            |err| eprintln!("stream error: {}", err),
+            |err| eprintln!("Stream error: {}", err),
             None,
         )?;
 
