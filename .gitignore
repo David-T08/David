@@ -6,3 +6,7 @@
 .DS_Store
 *.log
 Cargo.lock
+
+
+/models
+/models/** 
