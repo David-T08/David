@@ -35,7 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!();
     println!("Chose input: {}", recorder.get_input_name().unwrap());
-
+    
     let detector = Detector::new(
         "/home/david/development/rust/david/models/vosk-model-en-us-0.22-lgraph",
         "hey david",

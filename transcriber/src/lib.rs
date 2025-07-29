@@ -1,14 +1,32 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+use std::process::Command;
+use ureq;
+
+pub enum WhisperModel {
+
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub struct TranscriberConfig {
+    port: u16,
+    host: Option<String>,
+}
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+impl TranscriberConfig {
+    pub fn from_file() {
+        todo!();
     }
 }
+
+pub struct Transcriber {
+    port: u16,
+    host: Option<String>,
+}
+
+impl Transcriber {
+    pub fn connect(port: u16, host: Option<String>) -> Result<TranscriberServer, String> {
+        todo!();
+    }
+}
+
+pub struct TranscriberServer {}
+
+impl TranscriberServer {}
